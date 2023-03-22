@@ -1,7 +1,380 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Rena Ju, Kevin Li  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+
+<script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+</script>
+<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+
+</head>
+
+<body>
+<br />
+<h1 align="middle">Assignment 3-2: Additional Features to PathTracer</h1>
+    <h2 align="middle">Rena Ju, Kevin Li</h2>
+    <h2 align="middle">(Webpage URL)</h2>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+              <td>
+                <img src="images/lucy.png" align="middle" width="400px"/>
+              </td>
+              <td>
+                <img src="images/part2/dragon_256_005.png" align="middle" width="400px"/>
+              </td>
+            </tr>
+            <tr align="center">
+                <td>
+                  <img src="images/part2/bunny_ag.png" align="middle" width="400px"/>
+                </td>
+                <td>
+                  <img src="images/spheres_micro.png" align="middle" width="400px"/>
+                </td>
+              </tr>
+        </table>
+    </div>
+
+    <div class="padded">
+
+        
+        <!--* NOTE: For this project, you will choose TWO out of the four given parts to complete. One of those parts must be Part 1 or Part 2. In other words, you can choose any combination of two parts except the pair (Part 3, Part 4).-->
+        <h3 align="middle">Overview</h3>
+        <p>
+            For this project, we chose to implement Part 1 and Part 2 to model 
+            mirror, glass, and microfacet materials. After implementing functions 
+            that trace light rays' interaction with these materials, we could render
+            some pretty images with mirror, glass, and different metal conductors.
+        </p>
+
+        <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
+
+        
+        <p>
+            In this part, we implemented modeling for mirror and glass materials. 
+            In order to do this, we need to implement reflect and refract functions.
+            For the reflect function, we simply reflect $w_o$ about normal vector (0,0,1)
+            and store result in $w_i$. After implementing reflection, we were able to 
+            model mirror matierials. To model glass materials, however, we need another
+            function to simulate refraction through glass. The refract function takes in 
+            $w_o$, $w_i$, and a single $ior$, which is the index of refraction. We 
+            used Snell's Law to calculate whether there is internal reflection. If 
+            there is internal reflection, we return false and do not store anything in 
+            $w_i$. Otherwise we update $w_i$ accordingly.
+        </p>
+
+        <p>
+            To complete this part, we implement the <code>GlassBSDF::sample_f</code> function.
+            We first check if there is total internal reflection by calling the <code>refract</code>
+            helper function we just implemented. If there is total internal reflection 
+            (there is no refraction), we assign pdf to $1.$ and return the reflectance divided by 
+            $cos(\theta)$, where $\theta$ is the angle between $w_i$ and the normal vector. Otherwise,
+            we use Schlick's coefficient, $R$ to approximate the ratio of reflection to refraction.
+            We would thereby have reflection with probability $R$ and refraction with probabiltiy $1 - R$. 
+            We then draw a random sample from a uniform distribution and if it falls within $R$ then we reflect.
+            Otherwise, we refract and return $(1 - R) * $ transmittance $ / ( cos(\theta) * \eta^2 ) $.
+
+        </p>
+
+        <p> Now we compare rendering results with different values of max_ray_depth. </p>
+        <br>
+    </div>
+
+        <div align="middle">
+            <p><b>
+                Show a sequence of six images of scene `CBspheres.dae` rendered with `max_ray_depth` set to 0, 1, 2, 3, 4, 5, and 100. The other settings should be at least 64 samples per pixel and 4 samples per light. Make sure to include all screenshots.
+            </b></p>
+            <table style="width:100%">
+              <tr align="center">
+                <td>
+                  <img src="images/part1/spheres_256_m0.png" align="middle" width="400px"/>
+                  <figcaption>max_ray_depth = 0</figcaption>
+                </td>
+                <td>
+                  <img src="images/part1/spheres_256_m1.png" align="middle" width="400px"/>
+                  <figcaption>max_ray_depth = 1</figcaption>
+                </td>
+              </tr>
+            </table>
+        </div>
+
+        <div class="padded">
+            <p>
+                With may_ray_depth at 0 or 1, we don't see any reflection or refraction. 
+                Because we are not considering any bounces, we only see light rays directly 
+                emitted by the source. So we cannot see the spheres.
+            </p>
+        </div>
+
+        <div align="middle">
+            <table style="width:100%">
+                <tr align="center">
+                    <td>
+                        <img src="images/part1/spheres_256_m2.png" align="middle" width="400px"/>
+                        <figcaption>max_ray_depth = 2</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/part1/spheres_256_m3.png" align="middle" width="400px"/>
+                        <figcaption>max_ray_depth = 3</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="padded">
+            <p>
+                With may_ray_depth at 2, we start seeing the mirror, but still not the glass sphere. 
+                With may_ray_depth at 3, we finally start to see the glass sphere. However, the reflection 
+                of the glass sphere in the mirror sphere still appears dark, while in reality it should 
+                be transparent.
+            </p>
+        </div>
+
+        <div align="middle">
+            <table style="width:100%">
+                <tr align="center">
+                    <td>
+                        <img src="images/part1/spheres_256_m4.png" align="middle" width="400px"/>
+                        <figcaption>max_ray_depth = 4</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/part1/spheres_256_m5.png" align="middle" width="400px"/>
+                        <figcaption>max_ray_depth = 5</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="padded">
+            <p>
+                With may_ray_depth at 4, the reflection of the glass sphere on the mirror sphere 
+                appears transparent. With max_ray_depth at 4, light on the wall refracted by the 
+                glass sphere appears brighter than that in the image in which max_ray_depth = 4.
+            </p>
+        </div>
+
+        <div align="middle">
+            <table style="width:100%">
+                <tr align="center">
+                    <td>
+                        <img src="images/part1/spheres_256_m100.png" align="middle" width="400px"/>
+                        <figcaption>max_ray_depth = 100</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="padded">
+            <p>
+                With may_ray_depth at 100, it looks very similar to the rendered result from 
+                max_ray_depth at 5 because it is unlikely that we have light rays that 
+                bounce for a number of times that much exceeds 5.
+            </p>
+        </div>
+        <br>
+
+    <div class="padded">
+
+        <h3 align="middle">Part 2. Microfacet Material</h3>
+
+        <p>
+            In this next part, we implemented functions to model microfacet materials.
+            These include calculating the normal distirbution function, 
+            calculating the Fresnel term, and performing importance sampling, and 
+            finally combining them all together to evalute the BRDF.
+            We first implemented the BRDF evaluation function <code>Microfacet::f()</code>,
+            with the Fresnel term and normal distribution function abstracted. We 
+            simply computed $f$ using the equation:
+            
+            <p align="middle">$f = \frac{F(w_i) * G(w_o, w_i) * D(h)}{4 * (n \cdot w_o) * (n \cdot w_i)}$ </p>
+            
+            Next, we computed the normal distribution function, which models the distribution 
+            of the surface normals of the microfaceted object. 
+            We adopt the Beckman distribution evaluated at the half-angle vector.
+
+            Then we computed the Fresnel term, which is approximated by first computing 
+            Fresnel terms at R, G, B channels separately and then combining the values. 
+
+            Finally, we implemented importance sampling in order to optimize our pipeline 
+            to render higher-quality, less noisy images. We first randomly sampled two values 
+            $r_1$ and $r_2$. We use these values in the inversion method to obtain $\theta_h$ and 
+            $\phi_h$. Then we obtain the pdf of sampling $w_i$ with respect to solid angle by first 
+            computing the pdf of sampling $h$ with respect to solid angle, and then use 
+            the relationship between this pdf and the pdf of sampling $w_i$ to obtain the final 
+            pdf. 
+
+        </p>
+
+        <p><b>
+            Show a screenshot sequence of 4 images of scene `CBdragon_microfacet_au.dae` rendered with $\alpha$ set to 0.005, 0.05, 0.25 and 0.5. The other settings should be at least 128 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Describe the differences between different images. Note that, to change the $\alpha$, just open the .dae file and search for `microfacet`.
+        </b></p>
+        <p>
+            Below are images rendered with different values of $\alpha$. Since $\alpha$ defines 
+            the roughness of the material, we can see that increasing the 
+            $\alpha$ value causes the object to appear more rough and less shiny.
+        </p>
+        <br>
+    </div>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part2/dragon_256_0005.png" align="middle" width="400px"/>
+                    <figcaption> dragon $\alpha$ = 0.005</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/dragon_256_005.png" align="middle" width="400px"/>
+                    <figcaption> dragon $\alpha$ = 0.05</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part2/dragon_256_025.png" align="middle" width="400px"/>
+                    <figcaption> dragon $\alpha$ = 0.25</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/dragon_256_05.png" align="middle" width="400px"/>
+                    <figcaption> dragon $\alpha$ = 0.5</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="padded">
+        <p><b>
+            Show two images of scene `CBbunny_microfacet_cu.dae` rendered using cosine hemisphere sampling (default) and your importance sampling. The sampling rate should be fixed at 64 samples per pixel and 1 samples per light. The number of bounces should be at least 5. Briefly discuss their difference.
+        </b></p>
+    </div>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part2/bunny_64_cos_hem.png" align="middle" width="400px"/>
+                    <figcaption>cosine hemisphere sampling</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/bunny_64_importance.png" align="middle" width="400px"/>
+                    <figcaption>importance sampling</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="padded">
+        <p>
+            The above images show rendering results using cosine hemisphere sampling and importance sampling.
+            We can see that cosine hemisphere sampling does not accurately model the light 
+            reflecting off of microfacted material since it evenly sample across a hemisphere. 
+            The image rendered with importance sampling is much more realistic because 
+            it samples according to the adopted Beckman distribution of surface normals.
+        </p>
+        <br>
+        <p><b>
+            Show at least one image with some other conductor material, replacing `eta` and `k`. Note that you should look up values for real data rather than modifying them arbitrarily. Tell us what kind of material your parameters correspond to. 
+        </b></p>
+    </div>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part2/bunny_ag.png" align="middle" width="400px"/>
+                    <figcaption>silver bunny</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="padded">
+        <p>
+            This final image is rendered using silver's $\eta$ and $k$ values corresponding to R, G, B 
+            wavelengths at 614 nm, 549 nm, and 466 nm. We thereby get a silver bunny!
+        </p>
+        <br>
+    </div>
+</body>
 </html>
+        
+        
+<!--
+        <h3 align="middle">Part 3. Environment Light</h3>
+        <b>Pick one *.exr* file to use for all subparts here. Include a converted *.jpg* of it in your website so we know what map you are using.</b>
+        
+        <p><b>
+            In a few sentences, explain the ideas behind environment lighting (i.e. why we do it/how it works).
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        <p><b>
+            Show the *probability_debug.png* file for the *.exr* file you are using, generated using the `save_probability_debug()` helper function after initializing your probability distributions.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        <p><b>
+            Use the `bunny_unlit.dae` scene and your environment map *.exr* file and render two pictures, one with uniform sampling and one with importance sampling. Use 4 samples per pixel and 64 samples per light in each. Compare noise levels. Make sure to include all screenshots.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        <p><b>
+            Use a different image (if you did part 2, we recommend `bunny_microfacet_cu_unlit.dae`) and your environment map *.exr* file and render two pictures, one with uniform sampling and one with importance sampling. Use 4 samples per pixel and 64 samples per light in each. Compare noise levels. Make sure to include all screenshots.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+
+
+
+        <h3 align="middle">Part 4. Depth of Field</h3>
+        <b>
+            For these subparts, we recommend using a microfacet BSDF scene to show off the cool out of focus effects you can get with depth of field!
+        </b>
+        <p><b>
+            In a few sentences, explain the differences between a pinhole camera model and a thin-lens camera model. 
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        <p><b>
+            Show a "focus stack" where you focus at 4 visibly different depths through a scene. Make sure to include all screenshots.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+        <p><b>
+            Show a sequence of 4 pictures with visibly different aperture sizes, all focused at the same point in a scene. Make sure to include all screenshots.
+        </b></p>
+        <p>
+            Your response goes here.
+        </p>
+        <br>
+    -->
+
