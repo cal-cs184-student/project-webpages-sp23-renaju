@@ -1,7 +1,367 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Rena Ju, Kevin Li</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>
+  In this project, we implemented a cloth simulator to model behavior of flexible material in response to force. In addition, we also implemented different shaders to stylize the cloth. The cloth is modeled as a 2D grid of point masses connected by springs. This is conceptually similar to cloth in real life because the lattice of springs is analogous to interwoven flexible fiber. The motion of the cloth is modeled by the mechanic of springs (e.g. Hooke’s Law). Specifically, we update the position of point masses in each time step using Verlet’s integration modified by a damping constant. We then considered cases in which the cloth collides with other objects or itself to make the simulation much more realistic. We thought the implementation of self-collision is particularly interesting. The hash map is an elegant way to consider point masses colliding with other point masses on the grid. We will further elaborate on our takeaway in Part IV.
+</p>
+<h2 align="middle">Part I: Masses and Springs</h2>
+<p>
+  We model the cloth as a grid of springs connecting point masses. The nature of the spring, mathematically represented as the spring constant $k_s$, determines the flexibility of the cloth. There are also three types of springs that determine the structure of the cloth and the behavior of cloth in reaction to applied force: structural, shearing, and bending. Structural springs resist vertical and horizontal stretching, and shearing diagonal stretching. Bending springs resist out-of-plane distortion. To build the data structure for the grid, we first added all the point masses in row-major order according to the orientation of the cloth. Then we iterated through all of the point masses and added some or all of the three types of springs where appropriate.</body>
+</p>
+
+<div align="middle">
+  <table style="width:100%">
+      <tr align="center">
+        <td>
+          <img src="images/part1/pinned4_structural.png" align="middle" width="400px"/>
+          <figcaption>Structural Springs Only</figcaption>
+        </td>
+        <td>
+          <img src="images/part1/pinned4_shearing.png" align="middle" width="400px"/>
+          <figcaption>Shearing Springs Only</figcaption>
+        </td>
+      </tr>
+      <tr align="center">
+          <td>
+            <img src="images/part1/pinned4_bending.png" align="middle" width="400px"/>
+            <figcaption>Bending Springs Only</figcaption>
+          </td>
+          <td>
+            <img src="images/part1/pinned4_all.png" align="middle" width="400px"/>
+            <figcaption>All Springs</figcaption>
+          </td>
+        </tr>
+  </table>
+</div>
+
+<p>
+  Note that turning on structural springs alone and bending springs alone look very similar because they are in the same direction so they overlap.
+</p>
+
+<h2 align="middle">Part II: Simulation via Numerical Integration</h2>
+<p>
+  Having constructed the grid of point masses and springs, we are ready to simulate the cloth in action. We first compute the total force acting upon each point mass. Since we are given the external accelerations, we can compute the force by applying Newton’s Law $F = Ma$. Next, we use Verlet’s integration to compute each point mass’s new position, which is given by the equation: $x_{t + dt} = x_t + v_t * dt + a_t * dt^2$. Our implementation uses a version of Verlet’s integration modified by a damping hyperparameter to simulate loss of energy due to friction. So our final equation is given by: $x_{t+dt} = x_t + (1 - d) * (x_t - x_{t - dt}) + a_t * dt^2 $, where $d$ is the damping parameter. And we update the position of all point masses according to this equation, except those that are pinned. Additionally, we also constrain the springs to not extend beyond 10% of its original length per time step [Provot 1995]. We retroactively apply this constraint by correcting positions of point masses that are more than 110% of its original distance apart, after force is applied, to be exactly 110% of their original distance apart. 
+</p>
+<p>
+  Below are some examples of the simulation with different values of $k_s$, density, and damping.
+</p>
+
+<p>
+  <h3>Testing Different Spring Constants:</h3>
+  We can observe that the effects of each are as follows: the spring constant, $k_s$, determines the flexibility of the cloth, density determines the heaviness, and damping determines the energy loss. The smaller the spring constant, the more flexible the cloth and the more “jiggly” the simulation appears, and vice versa. We compared $k_s = 500 N/m$ and $k_s = 50,000N/m$ with the default $k_s = 5000 N/m$. When $k_s = 500 N/m$, the cloth appears more “drape-y” meanwhile when  $k_s = 500 N/m$ the cloth appears smoother.
+</p>
+<div align="middle">
+  <table style="width:100%">
+      <tr align="center">
+        <td>
+          <img src="images/part2/ks500.png" align="middle" width="400px"/>
+          <figcaption>$k_s = 500$</figcaption>
+        </td>
+        <td>
+          <img src="images/part2/ks5000.png" align="middle" width="400px"/>
+          <figcaption>$k_s = 5000$</figcaption>
+        </td>
+        <td>
+          <img src="images/part2/ks50000.png" align="middle" width="400px"/>
+          <figcaption>$k_s = 50000$</figcaption>
+          </td>
+      </tr>
+  </table>
+</div>
+
+<p>
+  <h3>Testing Different Densities:</h3>
+  Density determines the heaviness of the cloth. With the default setting of density at 15 $g/cm^2$, When density is at 1, the cloth appears light, flow-y, and smooth, and it slides off the sphere after colliding with it. In contrast, when density is at 100, the cloth bounces fewer times and drapes off of the sphere directly.
+</p>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part2/sphere_d1_1.png" align="middle" width="400px"/>
+        <figcaption>Density = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/part2/sphere_d1_2.png" align="middle" width="400px"/>
+        <figcaption>Density = 1</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+        <img src="images/part2/sphere_d1_3.png" align="middle" width="400px"/>
+        <figcaption>Density = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/part2/sphere_d1_4.png" align="middle" width="400px"/>
+        <figcaption>Density = 1</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part2/sphere_d15_1.png" align="middle" width="400px"/>
+        <figcaption>Density = 15</figcaption>
+      </td>
+      <td>
+        <img src="images/part2/sphere_d15_2.png" align="middle" width="400px"/>
+        <figcaption>Density = 15</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+        <img src="images/part2/sphere_d15_3.png" align="middle" width="400px"/>
+        <figcaption>Density = 15</figcaption>
+      </td>
+      <td>
+        <img src="images/part2/sphere_d15_4.png" align="middle" width="400px"/>
+        <figcaption>Density = 15</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part2/sphere_d100_1.png" align="middle" width="400px"/>
+        <figcaption>Density = 100</figcaption>
+      </td>
+      <td>
+        <img src="images/part2/sphere_d100_2.png" align="middle" width="400px"/>
+        <figcaption>Density = 100</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+        <img src="images/part2/sphere_d100_3.png" align="middle" width="400px"/>
+        <figcaption>Density = 100</figcaption>
+      </td>
+      <td>
+        <img src="images/part2/sphere_d100_4.png" align="middle" width="400px"/>
+        <figcaption>Density = 100</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+  <h3>Testing Different Damping Constants:</h3>
+  The damping parameter determines how much energy is lost due to friction. With the default setting of damping at 0.2%, . When damping is at 0, there is no energy loss due to friction and the cloth drops very fast with many swings and appears more spring-y. In contrast, when damping is at 1%, the cloth moves very slowly and appears smoother.
+</p>
+
+<h2 align="middle">Part III: Handling Collision with Other Objects</h2>
+<p>
+  Until this point, we are only able to simulate unobstructed cloth dropping with various pinned points. Now we implement methods to simulate the cloth colliding with different objects. We consider collision with two types of objects: a plane and a sphere. For collision with a sphere, we mainly have to correct the positions of point masses that are inside the sphere after drop. For each of those point masses, we first compute the location where it should have intersected the sphere on its surface, called the tangent point, which is the point $radius$ away from the center of the sphere along the direction from the center of the sphere to the point mass’s original position. Then we compute a correction vector from its current position to reach the tangent point. Since we also need to consider friction of the sphere’s surface, the final position of the point mass is its <code> last_position </code> updated with the correction vector scaled by $1 - friction$. 
+</p>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part3/sphere_ks500.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 500$</figcaption>
+      </td>
+      <td>
+        <img src="images/part3/sphere_ks5000.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 5000$ (Default)</figcaption>
+      </td>
+      <td>
+        <img src="images/part3/sphere_ks50000.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 50000$</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+  The figures show simulation from <code> sphere.json </code> with three different $k_s$. When $k_s = 500 N/m$, the cloth is softer, more flexible so it drapes down from the sphere. When  $k_s = 500 N/m$ the cloth is stiffer so it sticks out from the sides of the sphere.
+</p>
+<p>
+  Similarly, to handle collision with a plane, we also correct the position of the point masses that “passed through” the plane. We similarly first compute the position where each point mass should have intersected the plane and from that the correction vector. What is slightly different from the case of collision with a sphere is that, since a plane does not have volume, we need a small surface offset to ensure that the point masses indeed appears to be “above” the surface. So we compute the correction vector as <code> tangent_pt + (SURFACE_OFFSET * normal) - pm.last_position </code>. Finally, we compute the final position as <code> last_position</code> updated by the correction vector scaled by $1 - friction$. </p>
+<p>
+  The image below shows simulation from <code> plane.json</code>
+</p>
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part3/plane.png" align="middle" width="400px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
+  <h2 align="middle">Part IV: Handling Self-Collision</h2>
+<p>
+  Now that we have implemented methods to handle collision with other objects, we also need to handle the cloth colliding with itself to achieve a more realistic simulation. Self-collision occurs when two point masses locate very close to each other. We use an optimized version of this check: we divide the simulation space into small 3D boxes, and only those within the same 3D box would have any chance of colliding so we only check if the points within the same box collide. This is implemented by computing a unique hash value from the position of each point mass and storing the position in a hash map. Point masses with the same hash value are within the same 3D box. For each point mass, we check if it collides with any other point by iterating through the points stored with the same hash (i.e. same 3D box) and checking if the distance from it is within twice the thickness of the cloth. If so, we compute the pairwise correction by subtracting twice the thickness along the vector between the colliding point masses. The final position is corrected by the average of all pairwise corrections scaled down by <code> simulation_steps </code>.  
+</p>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part4/selfCollision1.png" align="middle" width="400px"/>
+      </td>
+      <td>
+        <img src="images/part4/selfCollision2.png" align="middle" width="400px"/>
+      </td>
+      <td>
+        <img src="images/part4/selfCollision3.png" align="middle" width="400px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+  <h3>Interesting takeaway:</h3>
+  We thought the spatial hashing algorithm is very elegant. It computes the hash value from the position of the point mass so that point masses that are spatially close would have the same hash value and therefore collide on the hash map. Usually, in hash maps from which we want to query a few values, we construct the hash function so that the hash values are as unique as possible (i.e. avoid collisions). For our application, however, we actually want the point masses whose positions are similar to collide on the hash map, because in reality they would “collide” in the physical sense. We construct the hash function accordingly. The hash map essentially stores “bins” of point masses in proximity. Since the hash values are computed from point mass positions, the hash map is also an elegant way to allocate dynamic sizes of bins. When the point masses are more clustered, the hash map organically allocates fewer bins and have more points in each bin, and vice versa. This makes sense because when the point masses are more scattered and there are fewer points in each bin, there are supposed to be and there would be fewer pairwise computations, making the algorithm run closer to $O(n).$</p>
+
+  <h2 align="middle">Part V: Shaders</h2>
+<p>
+  Shader programs consist of two parts: a vertex shader and a fragment shader. The vertex shader computes information about the vertex, such as color and displacement. The fragment shader assigns attributes of the fragment based on vertex data. The different material effects result from different manipulation of attributes in the fragment shader. 
+</p>
+
+<p>
+  <h3>Blinn-Phong Shading:</h3>
+
+  We first implemented a diffuse shader. In the Blinn-Phong model, we account for ambient lighting, diffuse lighting, and specular lighting, respectively, by the following equation:
+
+  $$
+  L = k_a I_a + k_d(I/r^2) max(0, n \cdot l) + k_s (I/r^2)max(0, n \cdot h)^p
+  $$
+</p>
+<p>
+  <h3>Texture Mapping:</h3>
+</p>
+
+<table style="width:100%">
+  <tr align="center">
+    <td>
+      <img src="images/part5/texture_shiba_1.png" align="middle" width="400px"/>
+    </td>
+    <td>
+      <img src="images/part5/texture_shiba_2.png" align="middle" width="400px"/>
+    </td>
+  </tr>
+</table>
+</div>
+
+<p>
+  <h3>Bump and Displacement Maps:</h3>
+</p>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part5/bump_16_1.png" align="middle" width="400px"/>
+        <figcaption>Bump, Coarseness 16</figcaption>
+      </td>
+      <td>
+        <img src="images/part5/bump_16_2.png" align="middle" width="400px"/>
+        <figcaption>Bump, Coarseness 16</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+        <img src="images/part5/bump_128_1.png" align="middle" width="400px"/>
+        <figcaption>Bump, Coarseness 128</figcaption>
+      </td>
+      <td>
+        <img src="images/part5/bump_128_2.png" align="middle" width="400px"/>
+        <figcaption>Bump, Coarseness 128</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part5/displacement_1_16.png" align="middle" width="400px"/>
+        <figcaption>Displacement, Coarseness 16</figcaption>
+      </td>
+      <td>
+        <img src="images/part5/displacement_2_16.png" align="middle" width="400px"/>
+        <figcaption>Displacement, Coarseness 16</figcaption>
+      </td>
+    </tr>
+    <tr align="center">
+      <td>
+        <img src="images/part5/displacement_1_128.png" align="middle" width="400px"/>
+        <figcaption>Displacement, Coarseness 128</figcaption>
+      </td>
+      <td>
+        <img src="images/part5/displacement_2_128.png" align="middle" width="400px"/>
+        <figcaption>Displacement, Coarseness 128</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+  <h3>Mirror Shader:</h3>
+</p>
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part5/mirror_sphere.png" align="middle" width="400px"/>
+      </td>
+      <td>
+        <img src="images/part5/mirror_cloth.png" align="middle" width="400px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
 </html>
