@@ -94,6 +94,7 @@
   <h3>Testing Different Spring Constants:</h3>
   We can observe that the effects of each are as follows: the spring constant, $k_s$, determines the flexibility of the cloth, density determines the heaviness, and damping determines the energy loss. The smaller the spring constant, the more flexible the cloth and the more “jiggly” the simulation appears, and vice versa. We compared $k_s = 500 N/m$ and $k_s = 50,000N/m$ with the default $k_s = 5000 N/m$. When $k_s = 500 N/m$, the cloth appears more “drape-y” meanwhile when  $k_s = 500 N/m$ the cloth appears smoother.
 </p>
+
 <div align="middle">
   <table style="width:100%">
       <tr align="center">
@@ -250,16 +251,99 @@
     <tr align="center">
       <td>
         <img src="images/part4/selfCollision1.png" align="middle" width="400px"/>
+        <figcaption>Default Setting</figcaption>
       </td>
       <td>
         <img src="images/part4/selfCollision2.png" align="middle" width="400px"/>
+        <figcaption>Default Setting</figcaption>
       </td>
       <td>
         <img src="images/part4/selfCollision3.png" align="middle" width="400px"/>
+        <figcaption>Default Setting</figcaption>
       </td>
     </tr>
   </table>
 </div>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part4/ks500_1.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 500$</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/ks500_2.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 500$</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/ks500_3.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 500$</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part4/ks50000_1.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 50000$</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/ks50000_2.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 50000$</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/ks50000_3.png" align="middle" width="400px"/>
+        <figcaption>$k_s = 50000$</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part4/density1_1.png" align="middle" width="400px"/>
+        <figcaption>Density = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/density1_2.png" align="middle" width="400px"/>
+        <figcaption>Density = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/density1_3.png" align="middle" width="400px"/>
+        <figcaption>Density = 1</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part4/density100_1.png" align="middle" width="400px"/>
+        <figcaption>Density = 100</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/density100_2.png" align="middle" width="400px"/>
+        <figcaption>Density = 100</figcaption>
+      </td>
+      <td>
+        <img src="images/part4/density100_3.png" align="middle" width="400px"/>
+        <figcaption>Density = 100</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+  As we can see in the above images, spring constant $k_s$ determines stiffness of the cloth. The greater the $k_s$, the less the cloth folds onto itself. Meanwhile, the density determines weight of the cloth. The greater the density, the cloth folds onto itself in more of a "straightline" fashion instead of flowing in different directions.
+</p>
 
 <p>
   <h3>Interesting takeaway:</h3>
@@ -279,6 +363,31 @@
   L = k_a I_a + k_d(I/r^2) max(0, n \cdot l) + k_s (I/r^2)max(0, n \cdot h)^p
   $$
 </p>
+
+<table style="width:100%">
+  <tr align="center">
+    <td>
+      <img src="images/part5/only_ambient.png" align="middle" width="400px"/>
+      <figcaption>Ambient Only</figcaption>
+    </td>
+    <td>
+      <img src="images/part5/only_diffuse.png" align="middle" width="400px"/>
+      <figcaption>Diffuse Only</figcaption>
+    </td>
+  </tr>
+  <tr align="center">
+    <td>
+      <img src="images/part5/only_specular.png" align="middle" width="400px"/>
+      <figcaption>Specular Only</figcaption>
+    </td>
+    <td>
+      <img src="images/part5/phong.png" align="middle" width="400px"/>
+      <figcaption>Full Blinn-Phong</figcaption>
+    </td>
+  </tr>
+</table>
+</div>
+
 <p>
   <h3>Texture Mapping:</h3>
 </p>
